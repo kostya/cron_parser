@@ -8,16 +8,13 @@ class CronParser
   # internal "mutable" time representation
   class InternalTime
     property :year, :month, :day, :hour, :min
-    property :time_source
 
-    def initialize(time, time_source = Time)
+    def initialize(time)
       @year = time.year
       @month = time.month
       @day = time.day
       @hour = time.hour
       @min = time.minute
-
-      @time_source = time_source
     end
 
     def to_time
@@ -52,9 +49,8 @@ class CronParser
     "sat" => "6",
   }
 
-  def initialize(source, time_source = Time)
+  def initialize(source)
     @source = interpret_vixieisms(source)
-    @time_source = time_source
     @_interpolate_weekdays_cache = {} of String => Tuple(Set(Int32), Array(Int32))
     validate_source
   end
@@ -79,8 +75,8 @@ class CronParser
   end
 
   # returns the next occurence after the given date
-  def next(now = @time_source.now)
-    t = InternalTime.new(now, @time_source)
+  def next(now = Time.now)
+    t = InternalTime.new(now)
 
     unless time_specs[:month][0].includes?(t.month)
       nudge_month(t)
@@ -102,7 +98,7 @@ class CronParser
     t.to_time
   end
 
-  def nexts(now = @time_source.now, num = 1)
+  def nexts(now = Time.now, num = 1)
     res = [] of Time
     n = self.next(now)
     res << n
@@ -114,8 +110,8 @@ class CronParser
   end
 
   # returns the last occurence before the given date
-  def last(now = @time_source.now)
-    t = InternalTime.new(now, @time_source)
+  def last(now = Time.now)
+    t = InternalTime.new(now)
 
     unless time_specs[:month][0].includes?(t.month)
       nudge_month(t, :last)
@@ -137,7 +133,7 @@ class CronParser
     t = t.to_time
   end
 
-  def lasts(now = @time_source.now, num = 1)
+  def lasts(now = Time.now, num = 1)
     res = [] of Time
     n = self.last(now)
     res << n
