@@ -98,7 +98,7 @@ class CronParser
     t.to_time
   end
 
-  def nexts(now = Time.now, num = 1)
+  def next(now : Time, num : Int32)
     res = [] of Time
     n = self.next(now)
     res << n
@@ -133,7 +133,7 @@ class CronParser
     t = t.to_time
   end
 
-  def lasts(now = Time.now, num = 1)
+  def last(now : Time, num : Int32)
     res = [] of Time
     n = self.last(now)
     res << n

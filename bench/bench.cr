@@ -18,8 +18,8 @@ N.times do |i|
   cron_parser = CronParser.new("30 #{i % 24} * * *")
 
   # Comming times
-  s += cron_parser.nexts(t11, 100 * 100).size
-  s += cron_parser.lasts(t11, 100 * 100).size
+  s += cron_parser.next(t11, 100 * 100).size
+  s += cron_parser.last(t11, 100 * 100).size
 end
 
 p s
