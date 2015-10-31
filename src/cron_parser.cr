@@ -9,7 +9,7 @@ class CronParser
   class InternalTime
     property :year, :month, :day, :hour, :min
 
-    def initialize(time)
+    def initialize(time, @kind)
       @year = time.year
       @month = time.month
       @day = time.day
@@ -18,11 +18,7 @@ class CronParser
     end
 
     def to_time
-      Time.new(@year, @month, @day, @hour, @min, 0, 0, Time::Kind::Local)
-    end
-
-    def inspect
-      [year, month, day, hour, min].inspect
+      Time.new(@year, @month, @day, @hour, @min, 0, 0, @kind)
     end
   end
 
@@ -55,7 +51,7 @@ class CronParser
     validate_source
   end
 
-  def interpret_vixieisms(spec)
+  private def interpret_vixieisms(spec)
     case spec
     when "@reboot"
       raise ArgumentError.new("Can't predict last/next run of @reboot")
@@ -76,7 +72,7 @@ class CronParser
 
   # returns the next occurence after the given date
   def next(now = Time.now)
-    t = InternalTime.new(now)
+    t = InternalTime.new(now, now.kind)
 
     unless time_specs[:month][0].includes?(t.month)
       nudge_month(t)
@@ -100,7 +96,7 @@ class CronParser
 
   # returns the last occurence before the given date
   def last(now = Time.now)
-    t = InternalTime.new(now)
+    t = InternalTime.new(now, now.kind)
 
     unless time_specs[:month][0].includes?(t.month)
       nudge_month(t, :last)
