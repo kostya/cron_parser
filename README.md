@@ -1,4 +1,4 @@
-# cron_parser
+# CronParser
 
 Cron parser for Crystal language. Translated from Ruby https://github.com/siebertm/parse-cron. It is parse a crontab timing specification and determine when the job should be run. It is not a scheduler, it does not run the jobs.
 
@@ -18,7 +18,7 @@ dependencies:
 
 
 ```crystal
-require "./src/cron_parser"
+require "cron_parser"
 
 cron_parser = CronParser.new("30 * * * *")
 
