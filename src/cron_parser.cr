@@ -1,11 +1,6 @@
-require "set"
-
-# Parses cron expressions and computes the next occurence of the "job"
-#
 class CronParser
   VERSION = "0.1.0"
 
-  # internal "mutable" time representation
   class InternalTime
     property :year, :month, :day, :hour, :min
 
@@ -142,13 +137,13 @@ class CronParser
     values = elem.split(",").map do |subel|
       if subel =~ /^\*/
         step = subel.size > 1 ? subel[2..-1].to_i : 1
-        stepped_range(allowed_range, step)
+        stepped_range(allowed_range, step, allowed_range)
       else
         if m = subel.match(SUBELEMENT_REGEX)
           if m[5]? # with range
-            stepped_range(m[1].to_i..m[3].to_i, m[5].to_i)
+            stepped_range(m[1].to_i..m[3].to_i, m[5].to_i, allowed_range)
           elsif m[3]? # range without step
-            stepped_range(m[1].to_i..m[3].to_i, 1)
+            stepped_range(m[1].to_i..m[3].to_i, 1, allowed_range)
           else # just a numeric
             [m[1].to_i]
           end
@@ -259,13 +254,17 @@ class CronParser
     s
   end
 
-  private def stepped_range(rng, step = 1)
-    len = rng.end - rng.begin
+  private def stepped_range(rng, step, allowed_range)
+    first = rng.begin
+    last = rng.end
+    first = allowed_range.begin if first < allowed_range.begin
+    last = allowed_range.end if last > allowed_range.end
+    len = last - first
 
     num = len./(step)
-    result = (0..num).map { |i| rng.begin + step * i }
+    result = (0..num).map { |i| first + step * i }
 
-    result.pop if result[-1] == rng.end && rng.exclusive?
+    result.pop if result[-1] == last && rng.exclusive?
     result
   end
 
