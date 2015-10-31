@@ -47,7 +47,7 @@ class CronParser
 
   def initialize(source)
     @source = interpret_vixieisms(source)
-    @_interpolate_weekdays_cache = {} of String => Tuple(Set(Int32), Array(Int32))
+    @_interpolate_weekdays_cache = {} of String => Array(Int32)
     validate_source
   end
 
@@ -74,17 +74,17 @@ class CronParser
   def next(now = Time.now)
     t = InternalTime.new(now, now.kind)
 
-    unless time_specs[:month][0].includes?(t.month)
+    unless time_specs[:month].values.includes?(t.month)
       nudge_month(t)
       t.day = 0
     end
 
-    unless interpolate_weekdays(t.year, t.month)[0].includes?(t.day)
+    unless interpolate_weekdays(t.year, t.month).includes?(t.day)
       nudge_date(t)
       t.hour = -1
     end
 
-    unless time_specs[:hour][0].includes?(t.hour)
+    unless time_specs[:hour].values.includes?(t.hour)
       nudge_hour(t)
       t.min = -1
     end
@@ -98,17 +98,17 @@ class CronParser
   def last(now = Time.now)
     t = InternalTime.new(now, now.kind)
 
-    unless time_specs[:month][0].includes?(t.month)
+    unless time_specs[:month].values.includes?(t.month)
       nudge_month(t, :last)
       t.day = 32
     end
 
-    if t.day == 32 || !interpolate_weekdays(t.year, t.month)[0].includes?(t.day)
+    if t.day == 32 || !interpolate_weekdays(t.year, t.month).includes?(t.day)
       nudge_date(t, :last)
       t.hour = 24
     end
 
-    unless time_specs[:hour][0].includes?(t.hour)
+    unless time_specs[:hour].values.includes?(t.hour)
       nudge_hour(t, :last)
       t.min = 60
     end
@@ -136,6 +136,8 @@ class CronParser
 
   SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
 
+  record Element, values, elem
+
   def parse_element(elem, allowed_range)
     values = elem.split(",").map do |subel|
       if subel =~ /^\*/
@@ -156,7 +158,7 @@ class CronParser
       end
     end.flatten.sort
 
-    {Set.new(values), values, elem}
+    Element.new(values, elem)
   end
 
   # protected
@@ -168,8 +170,8 @@ class CronParser
 
   private def interpolate_weekdays_without_cache(year, month)
     t = Time.new(year, month, 1)
-    valid_mday, _, mday_field = time_specs[:dom]
-    valid_wday, _, wday_field = time_specs[:dow]
+    valid_mday, mday_field = time_specs[:dom].values, time_specs[:dom].elem
+    valid_wday, wday_field = time_specs[:dow].values, time_specs[:dow].elem
 
     # Careful, if both DOW and DOM fields are non-wildcard,
     # then we only need to match *one* for cron to run the job:
@@ -182,12 +184,13 @@ class CronParser
     valid_wday << 0 if valid_wday.includes?(7)
 
     result = [] of Int32
+
     while t.month == month
       result << t.day if valid_mday.includes?(t.day) || valid_wday.includes?(t.day_of_week.to_i)
       t += 1.day
     end
 
-    {Set.new(result), result}
+    result
   end
 
   private def nudge_year(t, dir = :next)
@@ -195,23 +198,23 @@ class CronParser
   end
 
   private def nudge_month(t, dir = :next)
-    spec = time_specs[:month][1]
+    spec = time_specs[:month].values
     next_value = find_best_next(t.month, spec, dir)
     t.month = next_value || (dir == :next ? spec.first : spec.last)
 
     nudge_year(t, dir) if next_value.nil?
 
     # we changed the month, so its likely that the date is incorrect now
-    valid_days = interpolate_weekdays(t.year, t.month)[1]
+    valid_days = interpolate_weekdays(t.year, t.month)
     t.day = dir == :next ? valid_days.first : valid_days.last
   end
 
   private def date_valid?(t, dir = :next)
-    interpolate_weekdays(t.year, t.month)[0].includes?(t.day)
+    interpolate_weekdays(t.year, t.month).includes?(t.day)
   end
 
   private def nudge_date(t, dir = :next, can_nudge_month = true)
-    spec = interpolate_weekdays(t.year, t.month)[1]
+    spec = interpolate_weekdays(t.year, t.month)
     next_value = find_best_next(t.day, spec, dir)
     t.day = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -219,7 +222,7 @@ class CronParser
   end
 
   private def nudge_hour(t, dir = :next)
-    spec = time_specs[:hour][1]
+    spec = time_specs[:hour].values
     next_value = find_best_next(t.hour, spec, dir)
     t.hour = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -227,7 +230,7 @@ class CronParser
   end
 
   private def nudge_minute(t, dir = :next)
-    spec = time_specs[:minute][1]
+    spec = time_specs[:minute].values
     next_value = find_best_next(t.min, spec, dir)
     t.min = next_value || (dir == :next ? spec.first : spec.last)
 
