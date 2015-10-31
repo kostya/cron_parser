@@ -3,6 +3,8 @@ require "set"
 # Parses cron expressions and computes the next occurence of the "job"
 #
 class CronParser
+  VERSION = "0.1.0"
+
   # internal "mutable" time representation
   class InternalTime
     property :year, :month, :day, :hour, :min
