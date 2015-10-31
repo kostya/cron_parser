@@ -47,7 +47,7 @@ class CronParser
 
   def initialize(source)
     @source = interpret_vixieisms(source)
-    @_interpolate_weekdays_cache = {} of String => Array(Int32)
+    @_interpolate_weekdays_cache = {} of Tuple(Int32, Int32) => Array(Int32)
     validate_source
   end
 
@@ -165,7 +165,7 @@ class CronParser
 
   # returns a list of days which do both match time_spec[:dom] or time_spec[:dow]
   private def interpolate_weekdays(year, month)
-    @_interpolate_weekdays_cache["#{year}-#{month}"] ||= interpolate_weekdays_without_cache(year, month)
+    @_interpolate_weekdays_cache[{year, month}] ||= interpolate_weekdays_without_cache(year, month)
   end
 
   private def interpolate_weekdays_without_cache(year, month)
