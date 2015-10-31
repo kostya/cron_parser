@@ -98,17 +98,6 @@ class CronParser
     t.to_time
   end
 
-  def next(now : Time, num : Int32)
-    res = [] of Time
-    n = self.next(now)
-    res << n
-    (num - 1).times do
-      n = self.next(n)
-      res << n
-    end
-    res
-  end
-
   # returns the last occurence before the given date
   def last(now = Time.now)
     t = InternalTime.new(now)
@@ -133,16 +122,21 @@ class CronParser
     t = t.to_time
   end
 
-  def last(now : Time, num : Int32)
-    res = [] of Time
-    n = self.last(now)
-    res << n
-    (num - 1).times do
-      n = self.last(n)
+  macro array_result(name)
+    def {{ name.id }}(now : Time, num : Int32)
+      res = [] of Time
+      n = self.{{ name.id }}(now)
       res << n
+      (num - 1).times do
+        n = self.{{ name.id }}(n)
+        res << n
+      end
+      res
     end
-    res
   end
+
+  array_result :next
+  array_result :last
 
   SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
 
