@@ -10,7 +10,7 @@ s = 0
   s += (cron_parser.next(t11) - t11).to_f / 100_000.0
 end
 p s
-p Time.now - t
+p (Time.now - t).to_f
 
 t = Time.now
 s = 0
@@ -23,4 +23,4 @@ N.times do |i|
 end
 
 p s
-p Time.now - t
+p (Time.now - t).to_f
