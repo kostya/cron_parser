@@ -5,9 +5,11 @@ t11 = Time.new 2015, 10, 12, 18, 33, 0
 
 t = Time.now
 s = 0
-(1000 * N).times do |i|
+(10 * N).times do |i|
   cron_parser = CronParser.new("#{i % 60} #{i % 24} * * *")
-  s += (cron_parser.next(t11) - t11).to_f / 100_000.0
+  100.times do
+    s += (cron_parser.next(t11) - t11).to_f / 100_000.0
+  end
 end
 p s
 p (Time.now - t).to_f

@@ -20,28 +20,10 @@ class CronParser
   end
 
   def initialize(source)
-    @source = interpret_vixieisms(source)
+    @source = interpret_vixieisms(source.strip)
     @_interpolate_weekdays_cache = {} of Tuple(Int32, Int32) => Array(Int32)
     validate_source
-  end
-
-  private def interpret_vixieisms(spec)
-    case spec
-    when "@reboot"
-      raise ArgumentError.new("Can't predict last/next run of @reboot")
-    when "@yearly", "@annually"
-      "0 0 1 1 *"
-    when "@monthly"
-      "0 0 1 * *"
-    when "@weekly"
-      "0 0 * * 0"
-    when "@daily", "@midnight"
-      "0 0 * * *"
-    when "@hourly"
-      "0 * * * *"
-    else
-      spec
-    end
+    @time_specs = calc_time_spec
   end
 
   # returns the next occurence after the given date
@@ -130,7 +112,7 @@ class CronParser
 
   SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
 
-  record Element, values, elem
+  record Element, values, values_a, elem
 
   def parse_element(elem, allowed_range)
     values = elem.split(",").map do |subel|
@@ -152,7 +134,7 @@ class CronParser
       end
     end.flatten.sort
 
-    Element.new(values, elem)
+    Element.new(Set.new(values), values.sort, elem)
   end
 
   # protected
@@ -184,27 +166,23 @@ class CronParser
       t += 1.day
     end
 
-    result
+    result.sort
   end
 
   private def nudge_year(t, dir = :next)
-    t.year = t.year + (dir == :next ? 1 : -1)
+    t.year += (dir == :next) ? 1 : -1
   end
 
   private def nudge_month(t, dir = :next)
-    spec = time_specs.month.values
+    spec = time_specs.month.values_a
     next_value = find_best_next(t.month, spec, dir)
     t.month = next_value || (dir == :next ? spec.first : spec.last)
 
-    nudge_year(t, dir) if next_value.nil?
+    nudge_year(t, dir) unless next_value
 
     # we changed the month, so its likely that the date is incorrect now
     valid_days = interpolate_weekdays(t.year, t.month)
-    t.day = dir == :next ? valid_days.first : valid_days.last
-  end
-
-  private def date_valid?(t, dir = :next)
-    interpolate_weekdays(t.year, t.month).includes?(t.day)
+    t.day = (dir == :next) ? valid_days.first : valid_days.last
   end
 
   private def nudge_date(t, dir = :next, can_nudge_month = true)
@@ -216,7 +194,7 @@ class CronParser
   end
 
   private def nudge_hour(t, dir = :next)
-    spec = time_specs.hour.values
+    spec = time_specs.hour.values_a
     next_value = find_best_next(t.hour, spec, dir)
     t.hour = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -224,7 +202,7 @@ class CronParser
   end
 
   private def nudge_minute(t, dir = :next)
-    spec = time_specs.minute.values
+    spec = time_specs.minute.values_a
     next_value = find_best_next(t.min, spec, dir)
     t.min = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -233,7 +211,7 @@ class CronParser
 
   private def nudge_second(t, dir = :next)
     if second = time_specs.second
-      spec = second.values
+      spec = second.values_a
       next_value = find_best_next(t.second, spec, dir)
       t.second = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -243,10 +221,6 @@ class CronParser
 
   record TimeSpec, minute, hour, dom, month, dow do
     property :second
-  end
-
-  private def time_specs
-    @time_specs ||= calc_time_spec
   end
 
   private def calc_time_spec
@@ -322,10 +296,11 @@ class CronParser
   # returns nil if no matching value was found
   private def find_best_next(current, allowed, dir)
     if dir == :next
-      allowed.sort.find { |val| val > current }
+      allowed.each { |val| return val if val > current }
     else
-      allowed.sort.reverse.find { |val| val < current }
+      allowed.reverse_each { |val| return val if val < current }
     end
+    nil
   end
 
   private def validate_source
@@ -336,5 +311,28 @@ class CronParser
     unless source_length >= 5 && source_length <= 6
       raise ArgumentError.new("not a valid cronline")
     end
+  end
+
+  private def interpret_vixieisms(spec)
+    case spec
+    when "@reboot"
+      raise ArgumentError.new("Can't predict last/next run of @reboot")
+    when "@yearly", "@annually"
+      "0 0 1 1 *"
+    when "@monthly"
+      "0 0 1 * *"
+    when "@weekly"
+      "0 0 * * 0"
+    when "@daily", "@midnight"
+      "0 0 * * *"
+    when "@hourly"
+      "0 * * * *"
+    else
+      spec
+    end
+  end
+
+  private def time_specs
+    @time_specs
   end
 end

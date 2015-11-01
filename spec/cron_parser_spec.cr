@@ -20,7 +20,7 @@ describe "CronParser#parse_element" do
     element, range, expected = data
     it "should return #{expected} for '#{element}' when range is #{range}" do
       parser = CronParser.new("* * * * *")
-      parser.parse_element(element, range).values.sort.should eq(expected.sort)
+      parser.parse_element(element, range).values_a.should eq(expected.sort)
     end
   end
 end
