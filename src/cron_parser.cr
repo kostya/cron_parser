@@ -2,15 +2,16 @@ class CronParser
   VERSION = "0.1.0"
 
   class InternalTime
-    property :year, :month, :day, :hour, :min, :second
+    property :year, :month, :day, :hour, :min, :second, :kind
 
-    def initialize(time, @kind)
+    def initialize(time)
       @year = time.year
       @month = time.month
       @day = time.day
       @hour = time.hour
       @min = time.minute
       @second = time.second
+      @kind = time.kind
     end
 
     def to_time
@@ -45,7 +46,7 @@ class CronParser
 
   # returns the next occurence after the given date
   def next(now = Time.now)
-    t = InternalTime.new(now, now.kind)
+    t = InternalTime.new(now)
 
     unless time_specs[:month].values.includes?(t.month)
       nudge_month(t)
@@ -79,7 +80,7 @@ class CronParser
 
   # returns the last occurence before the given date
   def last(now = Time.now)
-    t = InternalTime.new(now, now.kind)
+    t = InternalTime.new(now)
 
     unless time_specs[:month].values.includes?(t.month)
       nudge_month(t, :last)
