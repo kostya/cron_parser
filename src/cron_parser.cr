@@ -18,29 +18,6 @@ class CronParser
     end
   end
 
-  SYMBOLS = {
-    "jan" => "1",
-    "feb" => "2",
-    "mar" => "3",
-    "apr" => "4",
-    "may" => "5",
-    "jun" => "6",
-    "jul" => "7",
-    "aug" => "8",
-    "sep" => "9",
-    "oct" => "10",
-    "nov" => "11",
-    "dec" => "12",
-
-    "sun" => "0",
-    "mon" => "1",
-    "tue" => "2",
-    "wed" => "3",
-    "thu" => "4",
-    "fri" => "5",
-    "sat" => "6",
-  }
-
   def initialize(source)
     @source = interpret_vixieisms(source)
     @_interpolate_weekdays_cache = {} of Tuple(Int32, Int32) => Array(Int32)
@@ -287,6 +264,29 @@ class CronParser
     end
   end
 
+  SYMBOLS = {
+    "jan" => "1",
+    "feb" => "2",
+    "mar" => "3",
+    "apr" => "4",
+    "may" => "5",
+    "jun" => "6",
+    "jul" => "7",
+    "aug" => "8",
+    "sep" => "9",
+    "oct" => "10",
+    "nov" => "11",
+    "dec" => "12",
+
+    "sun" => "0",
+    "mon" => "1",
+    "tue" => "2",
+    "wed" => "3",
+    "thu" => "4",
+    "fri" => "5",
+    "sat" => "6",
+  }
+  
   private def substitute_parse_symbols(str)
     s = str.downcase
     SYMBOLS.each do |from, to|
