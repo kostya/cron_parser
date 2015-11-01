@@ -2,7 +2,7 @@ class CronParser
   VERSION = "0.1.0"
 
   class InternalTime
-    property :year, :month, :day, :hour, :min
+    property :year, :month, :day, :hour, :min, :second
 
     def initialize(time, @kind)
       @year = time.year
@@ -10,10 +10,11 @@ class CronParser
       @day = time.day
       @hour = time.hour
       @min = time.minute
+      @second = time.second
     end
 
     def to_time
-      Time.new(@year, @month, @day, @hour, @min, 0, 0, @kind)
+      Time.new(@year, @month, @day, @hour, @min, @second, 0, @kind)
     end
   end
 
@@ -84,8 +85,18 @@ class CronParser
       t.min = -1
     end
 
-    # always nudge the minute
-    nudge_minute(t)
+    unless time_specs[:second]?
+      nudge_minute(t)
+      t.second = 0
+    else
+      unless time_specs[:minute].values.includes?(t.min)
+        nudge_minute(t)
+        t.second = -1
+      end
+
+      nudge_second(t)
+    end
+
     t.to_time
   end
 
@@ -108,8 +119,18 @@ class CronParser
       t.min = 60
     end
 
-    # always nudge the minute
-    nudge_minute(t, :last)
+    unless time_specs[:second]?
+      nudge_minute(t, :last)
+      t.second = 0
+    else
+      unless time_specs[:minute].values.includes?(t.min)
+        nudge_minute(t, :last)
+        t.second = 60
+      end
+
+      nudge_second(t, :last)
+    end
+
     t = t.to_time
   end
 
@@ -232,17 +253,37 @@ class CronParser
     nudge_hour(t, dir) if next_value.nil?
   end
 
+  private def nudge_second(t, dir = :next)
+    spec = time_specs[:second].values
+    next_value = find_best_next(t.second, spec, dir)
+    t.second = next_value || (dir == :next ? spec.first : spec.last)
+
+    nudge_minute(t, dir) if next_value.nil?
+  end
+
   private def time_specs
     @time_specs ||= begin
       # tokens now contains the 5 fields
       tokens = substitute_parse_symbols(@source).split(/\s+/)
-      {
+
+      # if tokens has 6 parts, we parse first one as seconds (EXTRA syntax)
+      second = if tokens.size == 6
+        tokens.shift
+      end
+
+      res = {
         :minute => parse_element(tokens[0], 0..59), # minute
         :hour   => parse_element(tokens[1], 0..23), # hour
         :dom    => parse_element(tokens[2], 1..31), # DOM
         :month  => parse_element(tokens[3], 1..12), # mon
         :dow    => parse_element(tokens[4], 0..6),  # DOW
       }
+
+      if second
+        res[:second] = parse_element(second, 0..59) # second [optional]
+      end
+
+      res
     end
   end
 

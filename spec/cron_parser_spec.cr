@@ -4,6 +4,10 @@ def parse_date(str)
   Time.parse(str, "%Y-%m-%d %H:%M")
 end
 
+def parse_date_s(str)
+  Time.parse(str, "%Y-%m-%d %H:%M:%S")
+end
+
 describe "CronParser#parse_element" do
   [
     {"*", 0..59, (0..59).to_a},
@@ -92,6 +96,27 @@ describe "CronParser#next" do
       res.uniq.size.should eq(5)
     end
   end
+
+  # seconds
+  [
+    {"* * * * * *", "2015-10-31 22:50:50", "2015-10-31 22:50:51"},
+    {"* * * * * *", "2015-10-31 22:50:59", "2015-10-31 22:51:00"},
+    {"*/2 * * * * *", "2015-10-31 22:51:00", "2015-10-31 22:51:02"},
+    {"12 22 * * * *", "2015-10-31 22:51:00", "2015-10-31 23:22:12"},
+    {"* * * * *", "2015-10-31 22:51:00", "2015-10-31 22:52:00"},
+    {"*/12 * * * * *", "2015-10-31 22:51:55", "2015-10-31 22:52:00"},
+    {"*/9 * * * * *", "2015-10-31 22:51:50", "2015-10-31 22:51:54"},
+    {"12-24/9 * 23 * * *", "2015-10-31 22:51:50", "2015-10-31 23:00:12"},
+  ].each do |data|
+    line, now, expected_next = data
+    parser = CronParser.new(line)
+    parsed_now = parse_date_s(now)
+    expected = parse_date_s(expected_next)
+
+    it "next returns #{expected_next} for '#{line}' when now is #{now}" do
+      parser.next(parsed_now).should eq(expected)
+    end
+  end
 end
 
 describe "CronParser#last" do
@@ -158,6 +183,26 @@ describe "CronParser#last" do
     it "last with num returns array for '#{line}' when now is #{now}" do
       res = parser.last(parsed_now, 5)
       res.uniq.size.should eq(5)
+    end
+  end
+
+  # seconds
+  [
+    {"* * * * * *", "2015-10-31 22:51:00", "2015-10-31 22:50:59"},
+    {"*/2 * * * * *", "2015-10-31 22:51:00", "2015-10-31 22:50:58"},
+    {"12 22 * * * *", "2015-10-31 22:51:00", "2015-10-31 22:22:12"},
+    {"* * * * *", "2015-10-31 22:51:00", "2015-10-31 22:50:00"},
+    {"*/12 * * * * *", "2015-10-31 22:51:55", "2015-10-31 22:51:48"},
+    {"*/9 * * * * *", "2015-10-31 22:51:50", "2015-10-31 22:51:45"},
+    {"12-24/9 * 23 * * *", "2015-10-31 22:51:50", "2015-10-30 23:59:21"},
+  ].each do |data|
+    line, now, expected_next = data
+    parser = CronParser.new(line)
+    parsed_now = parse_date_s(now)
+    expected = parse_date_s(expected_next)
+
+    it "next returns #{expected_next} for '#{line}' when now is #{now}" do
+      parser.last(parsed_now).should eq(expected)
     end
   end
 end
