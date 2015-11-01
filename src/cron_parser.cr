@@ -268,8 +268,8 @@ class CronParser
 
       # if tokens has 6 parts, we parse first one as seconds (EXTRA syntax)
       second = if tokens.size == 6
-        tokens.shift
-      end
+                 tokens.shift
+               end
 
       res = {
         :minute => parse_element(tokens[0], 0..59), # minute
