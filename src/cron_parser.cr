@@ -48,7 +48,7 @@ class CronParser
   def next(now = Time.now)
     t = InternalTime.new(now)
 
-    unless time_specs[:month].values.includes?(t.month)
+    unless time_specs.month.values.includes?(t.month)
       nudge_month(t)
       t.day = 0
     end
@@ -58,16 +58,16 @@ class CronParser
       t.hour = -1
     end
 
-    unless time_specs[:hour].values.includes?(t.hour)
+    unless time_specs.hour.values.includes?(t.hour)
       nudge_hour(t)
       t.min = -1
     end
 
-    unless time_specs[:second]?
+    unless time_specs.second
       nudge_minute(t)
       t.second = 0
     else
-      unless time_specs[:minute].values.includes?(t.min)
+      unless time_specs.minute.values.includes?(t.min)
         nudge_minute(t)
         t.second = -1
       end
@@ -82,7 +82,7 @@ class CronParser
   def last(now = Time.now)
     t = InternalTime.new(now)
 
-    unless time_specs[:month].values.includes?(t.month)
+    unless time_specs.month.values.includes?(t.month)
       nudge_month(t, :last)
       t.day = 32
     end
@@ -92,16 +92,16 @@ class CronParser
       t.hour = 24
     end
 
-    unless time_specs[:hour].values.includes?(t.hour)
+    unless time_specs.hour.values.includes?(t.hour)
       nudge_hour(t, :last)
       t.min = 60
     end
 
-    unless time_specs[:second]?
+    unless time_specs.second
       nudge_minute(t, :last)
       t.second = 0
     else
-      unless time_specs[:minute].values.includes?(t.min)
+      unless time_specs.minute.values.includes?(t.min)
         nudge_minute(t, :last)
         t.second = 60
       end
@@ -164,14 +164,14 @@ class CronParser
 
   private def interpolate_weekdays_without_cache(year, month)
     t = Time.new(year, month, 1)
-    valid_mday, mday_field = time_specs[:dom].values, time_specs[:dom].elem
-    valid_wday, wday_field = time_specs[:dow].values, time_specs[:dow].elem
+    valid_mday, mday_field = time_specs.dom.values, time_specs.dom.elem
+    valid_wday, wday_field = time_specs.dow.values, time_specs.dow.elem
 
     # Careful, if both DOW and DOM fields are non-wildcard,
     # then we only need to match *one* for cron to run the job:
     if !(mday_field == "*" && wday_field == "*")
-      valid_mday = [] of Int32 if mday_field == "*"
-      valid_wday = [] of Int32 if wday_field == "*"
+      valid_mday.clear if mday_field == "*"
+      valid_wday.clear if wday_field == "*"
     end
 
     # Careful: crontabs may use either 0 or 7 for Sunday:
@@ -192,7 +192,7 @@ class CronParser
   end
 
   private def nudge_month(t, dir = :next)
-    spec = time_specs[:month].values
+    spec = time_specs.month.values
     next_value = find_best_next(t.month, spec, dir)
     t.month = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -216,7 +216,7 @@ class CronParser
   end
 
   private def nudge_hour(t, dir = :next)
-    spec = time_specs[:hour].values
+    spec = time_specs.hour.values
     next_value = find_best_next(t.hour, spec, dir)
     t.hour = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -224,7 +224,7 @@ class CronParser
   end
 
   private def nudge_minute(t, dir = :next)
-    spec = time_specs[:minute].values
+    spec = time_specs.minute.values
     next_value = find_best_next(t.min, spec, dir)
     t.min = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -232,37 +232,45 @@ class CronParser
   end
 
   private def nudge_second(t, dir = :next)
-    spec = time_specs[:second].values
-    next_value = find_best_next(t.second, spec, dir)
-    t.second = next_value || (dir == :next ? spec.first : spec.last)
+    if second = time_specs.second
+      spec = second.values
+      next_value = find_best_next(t.second, spec, dir)
+      t.second = next_value || (dir == :next ? spec.first : spec.last)
 
-    nudge_minute(t, dir) if next_value.nil?
+      nudge_minute(t, dir) if next_value.nil?
+    end
+  end
+
+  record TimeSpec, minute, hour, dom, month, dow do
+    property :second
   end
 
   private def time_specs
-    @time_specs ||= begin
-      # tokens now contains the 5 fields
-      tokens = substitute_parse_symbols(@source).split(/\s+/)
+    @time_specs ||= calc_time_spec
+  end
 
-      # if tokens has 6 parts, we parse first one as seconds (EXTRA syntax)
-      second = if tokens.size == 6
-                 tokens.shift
-               end
+  private def calc_time_spec
+    # tokens now contains the 5 fields
+    tokens = substitute_parse_symbols(@source).split(/\s+/)
 
-      res = {
-        :minute => parse_element(tokens[0], 0..59), # minute
-        :hour   => parse_element(tokens[1], 0..23), # hour
-        :dom    => parse_element(tokens[2], 1..31), # DOM
-        :month  => parse_element(tokens[3], 1..12), # mon
-        :dow    => parse_element(tokens[4], 0..6),  # DOW
-      }
+    # if tokens has 6 parts, we parse first one as seconds (EXTRA syntax)
+    second = if tokens.size == 6
+               tokens.shift
+             end
 
-      if second
-        res[:second] = parse_element(second, 0..59) # second [optional]
-      end
+    res = TimeSpec.new(
+      parse_element(tokens[0], 0..59), # minute
+      parse_element(tokens[1], 0..23), # hour
+      parse_element(tokens[2], 1..31), # DOM
+      parse_element(tokens[3], 1..12), # mon
+      parse_element(tokens[4], 0..6),  # DOW
+    )
 
-      res
+    if second
+      res.second = parse_element(second, 0..59) # second [optional]
     end
+
+    res
   end
 
   SYMBOLS = {
