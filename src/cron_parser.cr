@@ -108,7 +108,7 @@ class CronParser
       nudge_second(t, :last)
     end
 
-    t = t.to_time
+    t.to_time
   end
 
   macro array_result(name)
@@ -286,7 +286,7 @@ class CronParser
     "fri" => "5",
     "sat" => "6",
   }
-  
+
   private def substitute_parse_symbols(str)
     s = str.downcase
     SYMBOLS.each do |from, to|
