@@ -2,7 +2,13 @@ class CronParser
   VERSION = "0.1.0"
 
   class InternalTime
-    property :year, :month, :day, :hour, :min, :second, :kind
+    property year : Int32
+    property month : Int32
+    property day : Int32
+    property hour : Int32
+    property min : Int32
+    property second : Int32
+    property kind : Time::Kind
 
     def initialize(time)
       @year = time.year
@@ -18,6 +24,9 @@ class CronParser
       Time.new(@year, @month, @day, @hour, @min, @second, 0, @kind)
     end
   end
+
+  @source : String
+  @time_specs : TimeSpec
 
   def initialize(source)
     @source = interpret_vixieisms(source.strip)
@@ -112,7 +121,7 @@ class CronParser
 
   SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
 
-  record Element, values, values_a, elem
+  record Element, values : Set(Int32), values_a : Array(Int32), elem : String
 
   def parse_element(elem, allowed_range)
     values = elem.split(",").map do |subel|
@@ -219,8 +228,8 @@ class CronParser
     end
   end
 
-  record TimeSpec, minute, hour, dom, month, dow do
-    property :second
+  record TimeSpec, minute : Element, hour : Element, dom : Element, month : Element, dow : Element do
+    property second : Element?
   end
 
   private def calc_time_spec
