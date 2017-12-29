@@ -21,7 +21,7 @@ class CronParser
     end
 
     def to_time
-      Time.new(@year, @month, @day, @hour, @min, @second, 0, @kind)
+      Time.new(@year, @month, @day, @hour, @min, @second, nanosecond: 0, kind: @kind)
     end
   end
 

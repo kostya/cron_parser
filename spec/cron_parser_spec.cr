@@ -214,7 +214,7 @@ describe "CronParser#new" do
   end
 
   it "should raise error when given an invalid cronline" do
-    expect_raises do
+    expect_raises(ArgumentError) do
       CronParser.new("* * * *")
     end
   end
