@@ -8,7 +8,7 @@ class CronParser
     property hour : Int32
     property min : Int32
     property second : Int32
-    property kind : Time::Kind
+    property location : Time::Location
 
     def initialize(time)
       @year = time.year
@@ -17,11 +17,11 @@ class CronParser
       @hour = time.hour
       @min = time.minute
       @second = time.second
-      @kind = time.kind
+      @location = time.location
     end
 
     def to_time
-      Time.new(@year, @month, @day, @hour, @min, @second, nanosecond: 0, kind: @kind)
+      Time.new(@year, @month, @day, @hour, @min, @second, nanosecond: 0, location: @location)
     end
   end
 

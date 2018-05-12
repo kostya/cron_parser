@@ -1,11 +1,11 @@
 require "./spec_helper"
 
 def parse_date(str)
-  Time.parse(str, "%Y-%m-%d %H:%M")
+  Time.parse(str, "%Y-%m-%d %H:%M", Time::Location.local)
 end
 
 def parse_date_s(str)
-  Time.parse(str, "%Y-%m-%d %H:%M:%S")
+  Time.parse(str, "%Y-%m-%d %H:%M:%S", Time::Location.local)
 end
 
 describe "CronParser#parse_element" do
@@ -25,7 +25,7 @@ describe "CronParser#parse_element" do
   end
 end
 
-describe "CronParser#next" do
+context "CronParser#next" do
   [
     {"* * * * *", "2011-08-15 12:00", "2011-08-15 12:01"},
     {"* * * * *", "2011-08-15 02:25", "2011-08-15 02:26"},
