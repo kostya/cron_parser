@@ -21,7 +21,7 @@ class CronParser
     end
 
     def to_time
-      Time.new(@year, @month, @day, @hour, @min, @second, nanosecond: 0, location: @location)
+      Time.local(@year, @month, @day, @hour, @min, @second, nanosecond: 0, location: @location)
     end
   end
 
@@ -36,7 +36,7 @@ class CronParser
   end
 
   # returns the next occurence after the given date
-  def next(now = Time.now)
+  def next(now = Time.local)
     t = InternalTime.new(now)
 
     unless time_specs.month.values.includes?(t.month)
@@ -70,7 +70,7 @@ class CronParser
   end
 
   # returns the last occurence before the given date
-  def last(now = Time.now)
+  def last(now = Time.local)
     t = InternalTime.new(now)
 
     unless time_specs.month.values.includes?(t.month)
@@ -154,7 +154,7 @@ class CronParser
   end
 
   private def interpolate_weekdays_without_cache(year, month)
-    t = Time.new(year, month, 1)
+    t = Time.local(year, month, 1)
     valid_mday, mday_field = time_specs.dom.values, time_specs.dom.elem
     valid_wday, wday_field = time_specs.dow.values, time_specs.dow.elem
 
