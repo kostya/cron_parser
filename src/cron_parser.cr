@@ -1,5 +1,5 @@
 class CronParser
-  VERSION = "0.2.0"
+  VERSION = "0.3.0"
 
   class InternalTime
     property year : Int32
@@ -171,7 +171,9 @@ class CronParser
     result = [] of Int32
 
     while t.month == month
-      result << t.day if valid_mday.includes?(t.day) || valid_wday.includes?(t.day_of_week.to_i)
+      wday = t.day_of_week.to_i
+      wday = 0 if wday == 7
+      result << t.day if valid_mday.includes?(t.day) || valid_wday.includes?(wday)
       t += 1.day
     end
 
